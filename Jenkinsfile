@@ -2,11 +2,8 @@ pipeline {
     agent any
 
     environment {
-        NVD_API_KEY = credentials('c1760fd3-490f-43a0-ae8d-825ff412a81d')
-    }
-
-    tools {
-        'org.jenkinsci.plugins.DependencyCheck.tools.DependencyCheckInstallation' 'Default'
+        DEPENDENCY_CHECK = tool name: 'Default', type: 'org.jenkinsci.plugins.DependencyCheck.tools.DependencyCheckInstallation'
+        PYTHON = 'python3'
     }
 
     stages {
@@ -20,7 +17,7 @@ pipeline {
             steps {
                 echo 'Setting up Python virtual environment and installing dependencies...'
                 sh '''
-                    python3 -m venv venv
+                    ${PYTHON} -m venv venv
                     . venv/bin/activate
                     pip install -r requirements.txt
                 '''
@@ -29,12 +26,14 @@ pipeline {
 
         stage('Security Scan - OWASP Dependency Check') {
             steps {
-                dependencyCheck additionalArguments: """
-                    --nvdApiKey ${NVD_API_KEY}
-                    --format HTML
-                    --out dependency-check-report
-                    --scan .
-                """, odcInstallation: 'Default'
+                withCredentials([string(credentialsId: 'c1760fd3-490f-43a0-ae8d-825ff412a81d', variable: 'NVD_API_KEY')]) {
+                    dependencyCheck additionalArguments: """
+                        --nvdApiKey ${NVD_API_KEY}
+                        --format HTML
+                        --out dependency-check-report
+                        --scan .
+                    """, odcInstallation: 'Default'
+                }
             }
         }
     }
@@ -43,6 +42,7 @@ pipeline {
         always {
             script {
                 node {
+                    echo 'Archiving Dependency-Check report...'
                     archiveArtifacts artifacts: 'dependency-check-report/**', fingerprint: true
                 }
             }

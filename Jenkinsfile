@@ -14,15 +14,17 @@ pipeline {
         }
 
         stage('Security Scan - OWASP Dependency Check') {
-            steps {
-                sh '''
-                    /home/kali/Desktop/tools/jenkins/dependency-check/bin/dependency-check.sh \
-                        --project ComplianceDashboard \
-                        --format HTML \
-                        --out dependency-check-report \
-                        --scan .
-                '''
-            }
+         steps {
+               sh '''
+                 chmod +x /home/kali/Desktop/tools/jenkins/dependency-check/bin/dependency-check.sh
+                 /home/kali/Desktop/tools/jenkins/dependency-check/bin/dependency-check.sh \
+                 --project ComplianceDashboard \
+                 --format HTML \
+                 --out dependency-check-report \
+                 --scan .
+              '''
+}
+
         }
     }
 

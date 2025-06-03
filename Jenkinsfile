@@ -21,7 +21,7 @@ pipeline {
                         --project ComplianceDashboard \
                         --format HTML \
                         --out dependency-check-report \
-                        --scan .
+                        --scan . \
                         --noupdate
                 '''
             }

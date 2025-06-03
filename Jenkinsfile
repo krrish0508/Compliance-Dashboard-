@@ -4,8 +4,12 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                echo 'Installing Python dependencies...'
-                sh 'pip install -r requirements.txt'
+                echo 'Setting up Python virtual environment and installing dependencies...'
+                sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    venv/bin/pip install -r requirements.txt
+                '''
             }
         }
 
@@ -24,7 +28,7 @@ pipeline {
 
     post {
         always {
-            archiveArtifacts artifacts: 'dependency-check-report/*', fingerprint: true
+            archiveArtifacts artifacts: 'dependency-check-report/**/*', fingerprint: true
         }
     }
 }

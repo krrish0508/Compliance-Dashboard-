@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // Load the NVD API key from Jenkins credentials (ID: NVD_API_KEY)
-        NVD_API_KEY = credentials('NVD_API_KEY')
+        // This loads the secret text credential from Jenkins
+        NVD_API_KEY = credentials('NVD_API_KEY') // <- ensure this ID exists in Jenkins
     }
 
     stages {
@@ -38,6 +38,7 @@ pipeline {
 
     post {
         always {
+            // Ensures artifact archiving runs within the node context
             archiveArtifacts artifacts: 'dependency-check-report/**', fingerprint: true
         }
     }

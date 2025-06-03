@@ -22,6 +22,7 @@ pipeline {
                         --format HTML \
                         --out dependency-check-report \
                         --scan .
+                        --noupdate
                 '''
             }
         }

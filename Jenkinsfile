@@ -6,7 +6,6 @@ pipeline {
     }
 
     tools {
-        // Matches the name of the tool installation you configured in Jenkins under "Dependency-Check"
         'org.jenkinsci.plugins.DependencyCheck.tools.DependencyCheckInstallation' 'Default'
     }
 
@@ -44,7 +43,7 @@ pipeline {
         always {
             script {
                 node {
-                    archiveArtifacts artifacts: '**/dependency-check-report/**', fingerprint: true
+                    archiveArtifacts artifacts: 'dependency-check-report/**', fingerprint: true
                 }
             }
         }

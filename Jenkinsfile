@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     stages {
-        stage('Clone Repo') {
+        stage('Clone Repository') {
             steps {
-                checkout scm
+                git 'https://github.com/krrish0508/Compliance-Dashboard-'
             }
         }
 
@@ -14,37 +14,22 @@ pipeline {
             }
         }
 
-        stage('Run Ingestion') {
+        stage('Run Main Script') {
             steps {
-                sh 'python ingestion/ingest.py'
+                sh 'python3 main.py'
             }
         }
 
-        stage('Run Scoring') {
+        stage('Run Tests') {
             steps {
-                sh 'python scoring/score.py'
+                sh 'pytest'  // only if you have tests
             }
         }
 
-        stage('Generate Dashboard') {
+        stage('Archive Results') {
             steps {
-                sh 'python dashboard/render.py'
+                archiveArtifacts artifacts: '**/*.csv', fingerprint: true
             }
-        }
-
-        stage('Archive Reports') {
-            steps {
-                archiveArtifacts artifacts: '**/dashboard/output.html', allowEmptyArchive: true
-            }
-        }
-    }
-
-    post {
-        success {
-            echo 'Pipeline completed successfully.'
-        }
-        failure {
-            echo 'Pipeline failed.'
         }
     }
 }

@@ -16,8 +16,8 @@ pipeline {
         stage('Security Scan - OWASP Dependency Check') {
             steps {
                 sh '''
-                    chmod +x /home/kali/Desktop/tools/jenkins/dependency-check/bin/dependency-check.sh
-                    /home/kali/Desktop/tools/jenkins/dependency-check/bin/dependency-check.sh \
+                    chmod +x /opt/jenkins-tools/dependency-check/bin/dependency-check.sh
+                    /opt/jenkins-tools/dependency-check/bin/dependency-check.sh \
                         --project ComplianceDashboard \
                         --format HTML \
                         --out dependency-check-report \
@@ -29,7 +29,7 @@ pipeline {
 
     post {
         always {
-            archiveArtifacts artifacts: 'dependency-check-report/**/*', fingerprint: true
+            archiveArtifacts artifacts: 'dependency-check-report/*', fingerprint: true
         }
     }
 }

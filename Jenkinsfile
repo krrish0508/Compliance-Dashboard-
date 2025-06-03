@@ -1,8 +1,8 @@
 pipeline {
     agent any
 
-    tools {
-        dependencyCheck 'Default'
+    environment {
+        PATH = "${tool name: 'Default', type: 'org.jenkinsci.plugins.DependencyCheck.tools.DependencyCheckInstallation'}/bin:${env.PATH}"
     }
 
     stages {
@@ -25,7 +25,7 @@ pipeline {
 
         stage('Security Scan - OWASP Dependency Check') {
             steps {
-                dependencyCheck additionalArguments: '''
+                dependencyCheck odcInstallation: 'Default', additionalArguments: '''
                     --project ComplianceDashboard
                     --format HTML
                     --out dependency-check-report

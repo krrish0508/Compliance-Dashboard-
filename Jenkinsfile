@@ -1,23 +1,50 @@
 pipeline {
     agent any
 
-    environment {
-        VENV = "${WORKSPACE}/venv"
-    }
-
     stages {
-        stage('Setup Python Environment') {
+        stage('Clone Repo') {
             steps {
-                sh 'python3 -m venv venv'
-                sh './venv/bin/pip install --upgrade pip'
-                sh './venv/bin/pip install -r requirements.txt'
+                checkout scm
             }
         }
 
-        stage('Run Application') {
+        stage('Install Dependencies') {
             steps {
-                sh './venv/bin/python3 main.py'
+                sh 'pip install -r requirements.txt'
             }
+        }
+
+        stage('Run Ingestion') {
+            steps {
+                sh 'python ingestion/ingest.py'
+            }
+        }
+
+        stage('Run Scoring') {
+            steps {
+                sh 'python scoring/score.py'
+            }
+        }
+
+        stage('Generate Dashboard') {
+            steps {
+                sh 'python dashboard/render.py'
+            }
+        }
+
+        stage('Archive Reports') {
+            steps {
+                archiveArtifacts artifacts: '**/dashboard/output.html', allowEmptyArchive: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed.'
         }
     }
 }

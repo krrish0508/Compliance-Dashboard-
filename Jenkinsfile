@@ -2,27 +2,21 @@ pipeline {
     agent any
 
     stages {
-        stage('Install Dependencies') {
-            steps {
-                sh 'pip install -r requirements.txt'
-            }
-        }
-
-        stage('OWASP Dependency Check') {
-            steps {
-                sh '''
-                /opt/dependency-check/bin/dependency-check.sh \
-                    --project ComplianceDashboard \
-                    --scan . \
-                    --format HTML \
-                    --out dependency-check-report
-                '''
-            }
-        }
-
         stage('Build') {
             steps {
-                sh 'python3 main.py'
+                echo 'Build step here'
+            }
+        }
+
+        stage('Security Scan - OWASP Dependency Check') {
+            steps {
+                sh '''
+                    /home/kali/Desktop/tools/jenkins/dependency-check/bin/dependency-check.sh \
+                        --project ComplianceDashboard \
+                        --format HTML \
+                        --out dependency-check-report \
+                        --scan .
+                '''
             }
         }
     }

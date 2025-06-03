@@ -1,36 +1,38 @@
 pipeline {
     agent any
 
+    environment {
+        VENV_DIR = "venv"
+    }
+
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Build') {
             steps {
                 echo 'Setting up Python virtual environment and installing dependencies...'
                 sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    venv/bin/pip install -r requirements.txt
+                    python3 -m venv ${VENV_DIR}
+                    . ${VENV_DIR}/bin/activate
+                    pip install -r requirements.txt
                 '''
             }
         }
 
         stage('Security Scan - OWASP Dependency Check') {
             steps {
-                sh '''
-                    chmod +x /opt/jenkins-tools/dependency-check/bin/dependency-check.sh
-                    /opt/jenkins-tools/dependency-check/bin/dependency-check.sh \
-                        --project ComplianceDashboard \
-                        --format HTML \
-                        --out dependency-check-report \
-                        --scan . \
-                        --noupdate
-                '''
+                dependencyCheck additionalArguments: '--scan . --format HTML --project ComplianceDashboard --noupdate', odcInstallation: 'Default'
             }
         }
     }
 
     post {
         always {
-            archiveArtifacts artifacts: 'dependency-check-report/*', fingerprint: true
+            archiveArtifacts artifacts: '**/dependency-check-report.html', fingerprint: true
         }
     }
 }

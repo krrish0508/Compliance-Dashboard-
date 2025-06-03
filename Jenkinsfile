@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        PATH = "${tool name: 'Default', type: 'org.jenkinsci.plugins.DependencyCheck.tools.DependencyCheckInstallation'}/bin:${env.PATH}"
+        // Load the NVD API key from Jenkins credentials (ID: NVD_API_KEY)
+        NVD_API_KEY = credentials('NVD_API_KEY')
     }
 
     stages {
@@ -25,19 +26,19 @@ pipeline {
 
         stage('Security Scan - OWASP Dependency Check') {
             steps {
-                dependencyCheck odcInstallation: 'Default', additionalArguments: '''
-                    --project ComplianceDashboard
+                dependencyCheck additionalArguments: """
+                    --nvdApiKey ${NVD_API_KEY}
                     --format HTML
                     --out dependency-check-report
                     --scan .
-                '''
+                """, odcInstallation: 'Default'
             }
         }
     }
 
     post {
         always {
-            archiveArtifacts artifacts: 'dependency-check-report/**', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'dependency-check-report/**', fingerprint: true
         }
     }
 }

@@ -27,12 +27,13 @@ pipeline {
         stage('Security Scan - OWASP Dependency Check') {
             steps {
                 withCredentials([string(credentialsId: 'c1760fd3-490f-43a0-ae8d-825ff412a81d', variable: 'NVD_API_KEY')]) {
-                    dependencyCheck additionalArguments: """
-                        --nvdApiKey ${NVD_API_KEY}
-                        --format HTML
-                        --out dependency-check-report
+                    sh """
+                        ${DEPENDENCY_CHECK}/bin/dependency-check.sh \
+                        --nvdApiKey ${NVD_API_KEY} \
+                        --format HTML \
+                        --out dependency-check-report \
                         --scan .
-                    """, odcInstallation: 'Default'
+                    """
                 }
             }
         }
@@ -40,12 +41,8 @@ pipeline {
 
     post {
         always {
-            script {
-                node {
-                    echo 'Archiving Dependency-Check report...'
-                    archiveArtifacts artifacts: 'dependency-check-report/**', fingerprint: true
-                }
-            }
+            echo 'Archiving Dependency-Check report...'
+            archiveArtifacts artifacts: 'dependency-check-report/**', fingerprint: true
         }
     }
 }

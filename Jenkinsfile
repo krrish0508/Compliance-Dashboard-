@@ -2,7 +2,12 @@ pipeline {
     agent any
 
     environment {
-        NVD_API_KEY = credentials('NVD_API_KEY') // This ID must match your Jenkins credentials
+        NVD_API_KEY = credentials('c1760fd3-490f-43a0-ae8d-825ff412a81d')
+    }
+
+    tools {
+        // Matches the name of the tool installation you configured in Jenkins under "Dependency-Check"
+        'org.jenkinsci.plugins.DependencyCheck.tools.DependencyCheckInstallation' 'Default'
     }
 
     stages {
@@ -38,9 +43,8 @@ pipeline {
     post {
         always {
             script {
-                // Ensure this runs inside the workspace context
                 node {
-                    archiveArtifacts artifacts: 'dependency-check-report/**', fingerprint: true
+                    archiveArtifacts artifacts: '**/dependency-check-report/**', fingerprint: true
                 }
             }
         }

@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 def radar_chart(df):
     radar_data = df.groupby("Domain")["Score"].mean().reset_index()
@@ -21,51 +22,53 @@ def eisenhower_matrix(df):
         st.warning("Matrix requires 'Priority', 'Remediation', and 'Urgency' columns.")
         return
 
-    # Coordinates for each quadrant
     priority_coords = {
-        'Do First': (0, 1),
-        'Schedule': (0, 0),
-        'Delegate': (1, 1),
-        'Eliminate': (1, 0),
+        'Do First': (0.25, 0.75),
+        'Schedule': (0.25, 0.25),
+        'Delegate': (0.75, 0.75),
+        'Eliminate': (0.75, 0.25),
     }
 
     df = df[df['Priority'].isin(priority_coords)].copy()
     df['x'] = df['Priority'].apply(lambda p: priority_coords[p][0])
     df['y'] = df['Priority'].apply(lambda p: priority_coords[p][1])
-
-    # Truncate long remediation text for better layout
     df['Label'] = df['Remediation'].apply(lambda r: r[:50] + '...' if len(r) > 50 else r)
 
-    fig = px.scatter(
-        df,
-        x='x',
-        y='y',
-        text='Label',
-        color='Urgency',  # Color by Urgency now
-        symbol='Priority',  # Shape by Priority (optional visual cue)
-        hover_data=['Control', 'Score', 'Priority', 'Remediation'],
-        title="Eisenhower Matrix for Remediation",
-        labels={'x': '', 'y': ''},
-        color_discrete_map={'High': 'red', 'Low': 'green'},
-        height=550
-    )
+    fig = go.Figure()
 
-    fig.update_traces(marker=dict(size=18), textposition='top center')
+    # Add quadrant colored shapes (background blocks)
+    fig.add_shape(type="rect", x0=0, y0=0.5, x1=0.5, y1=1, fillcolor="#FF6961", opacity=0.25, line_width=0)
+    fig.add_shape(type="rect", x0=0.5, y0=0.5, x1=1, y1=1, fillcolor="#77DD77", opacity=0.25, line_width=0)
+    fig.add_shape(type="rect", x0=0, y0=0, x1=0.5, y1=0.5, fillcolor="#FFD700", opacity=0.25, line_width=0)
+    fig.add_shape(type="rect", x0=0.5, y0=0, x1=1, y1=0.5, fillcolor="#ADD8E6", opacity=0.25, line_width=0)
+
+    # Scatter points
+    fig.add_trace(go.Scatter(
+        x=df['x'], y=df['y'],
+        mode='markers+text',
+        marker=dict(size=14, color=df['Urgency'].map({'High': 'red', 'Low': 'green'})),
+        text=df['Label'],
+        textposition="top center",
+        hovertext=df.apply(lambda row: f"{row['Control']} ({row['Priority']}): {row['Remediation']}", axis=1),
+        name="Tasks"
+    ))
+
+    # Labels for quadrants
+    fig.add_annotation(x=0.25, y=0.95, text="🟥 Do First", showarrow=False, font=dict(size=14, color="black"))
+    fig.add_annotation(x=0.75, y=0.95, text="🟩 Delegate", showarrow=False, font=dict(size=14, color="black"))
+    fig.add_annotation(x=0.25, y=0.05, text="🟨 Schedule", showarrow=False, font=dict(size=14, color="black"))
+    fig.add_annotation(x=0.75, y=0.05, text="🟦 Eliminate", showarrow=False, font=dict(size=14, color="black"))
 
     fig.update_layout(
+        title="Eisenhower Matrix for Remediation",
         xaxis=dict(
-            tickmode='array',
-            tickvals=[0, 1],
-            ticktext=['Important', 'Not Important'],
-            range=[-0.5, 1.5]
+            showgrid=False, zeroline=False, showticklabels=False, range=[0, 1]
         ),
         yaxis=dict(
-            tickmode='array',
-            tickvals=[0, 1],
-            ticktext=['Not Urgent', 'Urgent'],
-            range=[-0.5, 1.5]
+            showgrid=False, zeroline=False, showticklabels=False, range=[0, 1]
         ),
-        margin=dict(l=40, r=40, t=40, b=40)
+        height=600,
+        margin=dict(l=20, r=20, t=60, b=20)
     )
 
     st.plotly_chart(fig, use_container_width=True)

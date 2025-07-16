@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
+import textwrap
 
 def radar_chart(df):
     radar_data = df.groupby("Domain")["Score"].mean().reset_index()
@@ -15,6 +16,9 @@ def heatmap(df):
     fig = px.imshow(heat_data, text_auto=True, color_continuous_scale="Blues",
                     title="Domain vs Framework Heatmap")
     st.plotly_chart(fig, use_container_width=True)
+
+def wrap_text(text, width=35):
+    return "<br>".join(textwrap.wrap(text, width=width))
 
 def eisenhower_matrix(df):
     st.subheader("🧭 Eisenhower Matrix: Remediation Prioritization")
@@ -35,18 +39,18 @@ def eisenhower_matrix(df):
     df['x'] = df['Priority'].apply(lambda p: quadrant_pos[p][0]) + np.random.uniform(-jitter, jitter, size=len(df))
     df['y'] = df['Priority'].apply(lambda p: quadrant_pos[p][1]) + np.random.uniform(-jitter, jitter, size=len(df))
 
-    # ✅ No truncation
-    df['Label'] = df['Remediation']
+    # Wrap long labels
+    df['Label'] = df['Remediation'].apply(lambda r: wrap_text(r, width=35))
 
     fig = go.Figure()
 
-    # Background colors for quadrants
+    # Quadrant background colors
     fig.add_shape(type="rect", x0=0, y0=0.5, x1=0.5, y1=1, fillcolor="#FF6961", opacity=0.25, line_width=0)  # Do First
     fig.add_shape(type="rect", x0=0.5, y0=0.5, x1=1, y1=1, fillcolor="#77DD77", opacity=0.25, line_width=0)  # Delegate
     fig.add_shape(type="rect", x0=0, y0=0, x1=0.5, y1=0.5, fillcolor="#FFD700", opacity=0.25, line_width=0)  # Schedule
     fig.add_shape(type="rect", x0=0.5, y0=0, x1=1, y1=0.5, fillcolor="#ADD8E6", opacity=0.25, line_width=0)  # Eliminate
 
-    # Plot each point with full label
+    # Plot each point with wrapped labels
     for _, row in df.iterrows():
         fig.add_trace(go.Scatter(
             x=[row['x']],
@@ -54,13 +58,13 @@ def eisenhower_matrix(df):
             mode='markers+text',
             marker=dict(size=14, color='red' if row['Urgency'] == 'High' else 'green'),
             text=[row['Label']],
-            textposition="top right",
+            textposition="top center",
             hovertext=f"{row['Control']} ({row['Priority']}): {row['Remediation']}",
             hoverinfo="text",
             showlegend=False
         ))
 
-    # Quadrant Labels
+    # Quadrant labels
     fig.add_annotation(x=0.25, y=0.95, text="🟥 Do First", showarrow=False, font=dict(size=14, color="black"))
     fig.add_annotation(x=0.75, y=0.95, text="🟩 Delegate", showarrow=False, font=dict(size=14, color="black"))
     fig.add_annotation(x=0.25, y=0.05, text="🟨 Schedule", showarrow=False, font=dict(size=14, color="black"))
@@ -70,7 +74,7 @@ def eisenhower_matrix(df):
         title="Eisenhower Matrix for Remediation",
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0, 1]),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0, 1]),
-        height=650,
+        height=700,
         margin=dict(l=20, r=20, t=60, b=20)
     )
 

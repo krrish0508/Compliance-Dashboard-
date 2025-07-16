@@ -18,5 +18,20 @@ def suggest_remediations(df):
         else:
             return "Control performing well. Maintain current processes."
 
+    def eisenhower_classification(row):
+        score = row['Score']
+        urgency = row.get('Urgency', 'Low')  # Default to Low if not present
+
+        severity = 'High' if score < 60 else 'Low'
+        if severity == 'High' and urgency == 'High':
+            return 'Do First'
+        elif severity == 'High' and urgency == 'Low':
+            return 'Schedule'
+        elif severity == 'Low' and urgency == 'High':
+            return 'Delegate'
+        else:
+            return 'Eliminate'
+
     df['Remediation'] = df.apply(suggest, axis=1)
+    df['Priority'] = df.apply(eisenhower_classification, axis=1)
     return df

@@ -51,11 +51,15 @@ def run_dashboard(_):
         df = normalize_data(uploaded_file)
         df = compute_scores(df)
 
-        # ✅ Add this to simulate urgency if not present
+        # ✅ Simulate urgency if not present
         if 'Urgency' not in df.columns:
             df['Urgency'] = np.random.choice(['High', 'Low'], size=len(df))
 
         df = suggest_remediations(df)
+
+        # Optional debug preview
+        # st.write("🔍 Priority Preview")
+        # st.dataframe(df[['Control', 'Score', 'Urgency', 'Priority']])
 
         st.markdown("---")
         framework = st.selectbox("🔍 Select Compliance Framework", sorted(df["Framework"].unique()))
@@ -68,7 +72,7 @@ def run_dashboard(_):
         with st.expander("📈 Advanced Visualizations"):
             radar_chart(df)
             heatmap(df)
-            eisenhower_matrix(df)  # ✅ Show matrix here
+            eisenhower_matrix(filtered)  # ✅ Use filtered data here
 
         with st.expander("🧠 Smart Insights"):
             insights = generate_insights(df)

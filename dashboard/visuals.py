@@ -5,26 +5,31 @@ import plotly.graph_objects as go
 import numpy as np
 import textwrap
 
-def wrap_text(text, width=35):
-    return "<br>".join(textwrap.wrap(text, width=width))
-
+# Radar chart function
 def radar_chart(df):
     radar_data = df.groupby("Domain")["Score"].mean().reset_index()
     fig = px.line_polar(radar_data, r="Score", theta="Domain", line_close=True,
                         title="Average Score by Domain", markers=True)
     st.plotly_chart(fig, use_container_width=True)
 
+# Heatmap function
 def heatmap(df):
     heat_data = df.pivot_table(index="Domain", columns="Framework", values="Score", aggfunc="mean")
     fig = px.imshow(heat_data, text_auto=True, color_continuous_scale="Blues",
                     title="Domain vs Framework Heatmap")
     st.plotly_chart(fig, use_container_width=True)
 
+# Text wrapping helper
+def wrap_text(text, width=35):
+    return "<br>".join(textwrap.wrap(text, width=width))
+
+# Eisenhower Matrix
 def eisenhower_matrix(df):
     st.subheader("🧭 Eisenhower Matrix: Remediation Prioritization")
 
-    if 'Priority' not in df.columns or 'Remediation' not in df.columns or 'Domain' not in df.columns:
-        st.warning("Matrix requires 'Priority', 'Remediation', and 'Domain' columns.")
+    required_cols = ['Priority', 'Remediation', 'Domain', 'Control']
+    if not all(col in df.columns for col in required_cols):
+        st.warning(f"Matrix requires columns: {', '.join(required_cols)}")
         return
 
     quadrant_coords = {
@@ -36,28 +41,26 @@ def eisenhower_matrix(df):
 
     df = df[df['Priority'].isin(quadrant_coords)].copy()
 
-    # Combine Domain with Remediation in a clear format
-    df['Combined'] = df.apply(lambda row: f"[{row['Domain']}] {row['Remediation']}", axis=1)
-
-    grouped = df.groupby('Priority')['Combined'].apply(list)
+    # Formatted string: [Domain] (Control) Remediation
+    df['Formatted'] = df.apply(lambda row: f"[{row['Domain']}] ({row['Control']}) {row['Remediation']}", axis=1)
+    grouped = df.groupby('Priority')['Formatted'].apply(list)
 
     fig = go.Figure()
 
-    # Background quadrant coloring
+    # Add quadrant backgrounds
     fig.add_shape(type="rect", x0=0, y0=0.5, x1=0.5, y1=1, fillcolor="#FF6961", opacity=0.25, line_width=0)  # Do First
     fig.add_shape(type="rect", x0=0.5, y0=0.5, x1=1, y1=1, fillcolor="#77DD77", opacity=0.25, line_width=0)  # Delegate
     fig.add_shape(type="rect", x0=0, y0=0, x1=0.5, y1=0.5, fillcolor="#FFD700", opacity=0.25, line_width=0)  # Schedule
     fig.add_shape(type="rect", x0=0.5, y0=0, x1=1, y1=0.5, fillcolor="#ADD8E6", opacity=0.25, line_width=0)  # Eliminate
 
-    # Annotate each quadrant with the full list
-    for quadrant, (x, y) in quadrant_coords.items():
-        items = grouped.get(quadrant, [])
+    # Add remediation texts
+    for priority, (x, y) in quadrant_coords.items():
+        items = grouped.get(priority, [])
         if items:
-            wrapped = [wrap_text(text, width=35) for text in items]
-            block = "<br><br>".join(wrapped)
+            wrapped_text = "<br><br>".join([wrap_text(i, width=35) for i in items])
             fig.add_annotation(
                 x=x, y=y,
-                text=block,
+                text=wrapped_text,
                 showarrow=False,
                 font=dict(size=12, color="black"),
                 align="left",
@@ -65,7 +68,7 @@ def eisenhower_matrix(df):
                 yanchor="middle"
             )
 
-    # Quadrant titles
+    # Quadrant labels
     fig.add_annotation(x=0.25, y=0.97, text="🟥 Do First", showarrow=False, font=dict(size=14, color="black"))
     fig.add_annotation(x=0.75, y=0.97, text="🟩 Delegate", showarrow=False, font=dict(size=14, color="black"))
     fig.add_annotation(x=0.25, y=0.03, text="🟨 Schedule", showarrow=False, font=dict(size=14, color="black"))

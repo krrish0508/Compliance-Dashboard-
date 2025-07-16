@@ -23,52 +23,49 @@ def wrap_text(text, width=35):
 def eisenhower_matrix(df):
     st.subheader("🧭 Eisenhower Matrix: Remediation Prioritization")
 
-    if 'Priority' not in df.columns or 'Remediation' not in df.columns or 'Urgency' not in df.columns:
-        st.warning("Matrix requires 'Priority', 'Remediation', and 'Urgency' columns.")
+    if 'Priority' not in df.columns or 'Remediation' not in df.columns:
+        st.warning("Matrix requires 'Priority' and 'Remediation' columns.")
         return
 
-    quadrant_pos = {
+    quadrant_coords = {
         'Do First': (0.25, 0.75),
         'Delegate': (0.75, 0.75),
         'Schedule': (0.25, 0.25),
         'Eliminate': (0.75, 0.25),
     }
 
-    df = df[df['Priority'].isin(quadrant_pos)].copy()
-    jitter = 0.035
-    df['x'] = df['Priority'].apply(lambda p: quadrant_pos[p][0]) + np.random.uniform(-jitter, jitter, size=len(df))
-    df['y'] = df['Priority'].apply(lambda p: quadrant_pos[p][1]) + np.random.uniform(-jitter, jitter, size=len(df))
-
-    # Wrap long labels
-    df['Label'] = df['Remediation'].apply(lambda r: wrap_text(r, width=35))
+    # Prepare quadrant remediation texts
+    grouped = df[df['Priority'].isin(quadrant_coords)].groupby('Priority')['Remediation'].apply(list)
 
     fig = go.Figure()
 
-    # Quadrant background colors
+    # Draw background quadrants
     fig.add_shape(type="rect", x0=0, y0=0.5, x1=0.5, y1=1, fillcolor="#FF6961", opacity=0.25, line_width=0)  # Do First
     fig.add_shape(type="rect", x0=0.5, y0=0.5, x1=1, y1=1, fillcolor="#77DD77", opacity=0.25, line_width=0)  # Delegate
     fig.add_shape(type="rect", x0=0, y0=0, x1=0.5, y1=0.5, fillcolor="#FFD700", opacity=0.25, line_width=0)  # Schedule
     fig.add_shape(type="rect", x0=0.5, y0=0, x1=1, y1=0.5, fillcolor="#ADD8E6", opacity=0.25, line_width=0)  # Eliminate
 
-    # Plot each point with wrapped labels
-    for _, row in df.iterrows():
-        fig.add_trace(go.Scatter(
-            x=[row['x']],
-            y=[row['y']],
-            mode='markers+text',
-            marker=dict(size=14, color='red' if row['Urgency'] == 'High' else 'green'),
-            text=[row['Label']],
-            textposition="top center",
-            hovertext=f"{row['Control']} ({row['Priority']}): {row['Remediation']}",
-            hoverinfo="text",
-            showlegend=False
-        ))
+    # Add all remediations as wrapped text blocks in each quadrant
+    for quadrant, (x, y) in quadrant_coords.items():
+        remediations = grouped.get(quadrant, [])
+        if remediations:
+            wrapped = [wrap_text(item, width=35) for item in remediations]
+            full_text = "<br><br>".join(wrapped)  # Add padding
+            fig.add_annotation(
+                x=x, y=y,
+                text=full_text,
+                showarrow=False,
+                font=dict(size=12, color="black"),
+                align="left",
+                xanchor="center",
+                yanchor="middle"
+            )
 
-    # Quadrant labels
-    fig.add_annotation(x=0.25, y=0.95, text="🟥 Do First", showarrow=False, font=dict(size=14, color="black"))
-    fig.add_annotation(x=0.75, y=0.95, text="🟩 Delegate", showarrow=False, font=dict(size=14, color="black"))
-    fig.add_annotation(x=0.25, y=0.05, text="🟨 Schedule", showarrow=False, font=dict(size=14, color="black"))
-    fig.add_annotation(x=0.75, y=0.05, text="🟦 Eliminate", showarrow=False, font=dict(size=14, color="black"))
+    # Add quadrant titles
+    fig.add_annotation(x=0.25, y=0.97, text="🟥 Do First", showarrow=False, font=dict(size=14, color="black"))
+    fig.add_annotation(x=0.75, y=0.97, text="🟩 Delegate", showarrow=False, font=dict(size=14, color="black"))
+    fig.add_annotation(x=0.25, y=0.03, text="🟨 Schedule", showarrow=False, font=dict(size=14, color="black"))
+    fig.add_annotation(x=0.75, y=0.03, text="🟦 Eliminate", showarrow=False, font=dict(size=14, color="black"))
 
     fig.update_layout(
         title="Eisenhower Matrix for Remediation",

@@ -23,7 +23,6 @@ def eisenhower_matrix(df):
         st.warning("Matrix requires 'Priority', 'Remediation', and 'Urgency' columns.")
         return
 
-    # Define quadrant centers
     quadrant_pos = {
         'Do First': (0.25, 0.75),
         'Delegate': (0.75, 0.75),
@@ -32,24 +31,22 @@ def eisenhower_matrix(df):
     }
 
     df = df[df['Priority'].isin(quadrant_pos)].copy()
-
-    # Assign base coordinates + jitter to avoid overlap
     jitter = 0.035
     df['x'] = df['Priority'].apply(lambda p: quadrant_pos[p][0]) + np.random.uniform(-jitter, jitter, size=len(df))
     df['y'] = df['Priority'].apply(lambda p: quadrant_pos[p][1]) + np.random.uniform(-jitter, jitter, size=len(df))
 
-    # Truncate text for labels
-    df['Label'] = df['Remediation'].apply(lambda r: r[:50] + '...' if len(r) > 50 else r)
+    # ✅ No truncation
+    df['Label'] = df['Remediation']
 
     fig = go.Figure()
 
-    # Add quadrant backgrounds
+    # Background colors for quadrants
     fig.add_shape(type="rect", x0=0, y0=0.5, x1=0.5, y1=1, fillcolor="#FF6961", opacity=0.25, line_width=0)  # Do First
     fig.add_shape(type="rect", x0=0.5, y0=0.5, x1=1, y1=1, fillcolor="#77DD77", opacity=0.25, line_width=0)  # Delegate
     fig.add_shape(type="rect", x0=0, y0=0, x1=0.5, y1=0.5, fillcolor="#FFD700", opacity=0.25, line_width=0)  # Schedule
     fig.add_shape(type="rect", x0=0.5, y0=0, x1=1, y1=0.5, fillcolor="#ADD8E6", opacity=0.25, line_width=0)  # Eliminate
 
-    # Plot each point
+    # Plot each point with full label
     for _, row in df.iterrows():
         fig.add_trace(go.Scatter(
             x=[row['x']],
@@ -59,10 +56,11 @@ def eisenhower_matrix(df):
             text=[row['Label']],
             textposition="top right",
             hovertext=f"{row['Control']} ({row['Priority']}): {row['Remediation']}",
+            hoverinfo="text",
             showlegend=False
         ))
 
-    # Quadrant labels
+    # Quadrant Labels
     fig.add_annotation(x=0.25, y=0.95, text="🟥 Do First", showarrow=False, font=dict(size=14, color="black"))
     fig.add_annotation(x=0.75, y=0.95, text="🟩 Delegate", showarrow=False, font=dict(size=14, color="black"))
     fig.add_annotation(x=0.25, y=0.05, text="🟨 Schedule", showarrow=False, font=dict(size=14, color="black"))
@@ -72,7 +70,7 @@ def eisenhower_matrix(df):
         title="Eisenhower Matrix for Remediation",
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0, 1]),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0, 1]),
-        height=600,
+        height=650,
         margin=dict(l=20, r=20, t=60, b=20)
     )
 

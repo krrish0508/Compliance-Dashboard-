@@ -17,11 +17,11 @@ def heatmap(df):
 def eisenhower_matrix(df):
     st.subheader("🧭 Eisenhower Matrix: Remediation Prioritization")
 
-    if 'Priority' not in df.columns or 'Remediation' not in df.columns:
-        st.warning("Eisenhower Matrix requires 'Priority' and 'Remediation' columns.")
+    if 'Priority' not in df.columns or 'Remediation' not in df.columns or 'Urgency' not in df.columns:
+        st.warning("Matrix requires 'Priority', 'Remediation', and 'Urgency' columns.")
         return
 
-    # Map priority to coordinates
+    # Coordinates for each quadrant
     priority_coords = {
         'Do First': (0, 1),
         'Schedule': (0, 0),
@@ -33,17 +33,24 @@ def eisenhower_matrix(df):
     df['x'] = df['Priority'].apply(lambda p: priority_coords[p][0])
     df['y'] = df['Priority'].apply(lambda p: priority_coords[p][1])
 
+    # Truncate long remediation text for better layout
+    df['Label'] = df['Remediation'].apply(lambda r: r[:50] + '...' if len(r) > 50 else r)
+
     fig = px.scatter(
         df,
         x='x',
         y='y',
-        text='Remediation',
-        color='Priority',
-        hover_data=['Control', 'Score'],
+        text='Label',
+        color='Urgency',  # Color by Urgency now
+        symbol='Priority',  # Shape by Priority (optional visual cue)
+        hover_data=['Control', 'Score', 'Priority', 'Remediation'],
         title="Eisenhower Matrix for Remediation",
         labels={'x': '', 'y': ''},
-        size_max=60
+        color_discrete_map={'High': 'red', 'Low': 'green'},
+        height=550
     )
+
+    fig.update_traces(marker=dict(size=18), textposition='top center')
 
     fig.update_layout(
         xaxis=dict(
@@ -57,7 +64,8 @@ def eisenhower_matrix(df):
             tickvals=[0, 1],
             ticktext=['Not Urgent', 'Urgent'],
             range=[-0.5, 1.5]
-        )
+        ),
+        margin=dict(l=40, r=40, t=40, b=40)
     )
 
     st.plotly_chart(fig, use_container_width=True)

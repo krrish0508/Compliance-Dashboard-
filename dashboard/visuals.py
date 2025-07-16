@@ -18,58 +18,72 @@ def heatmap(df):
 def eisenhower_matrix(df):
     st.subheader("🧭 Eisenhower Matrix: Remediation Prioritization")
 
-    if 'Priority' not in df.columns or 'Remediation' not in df.columns or 'Urgency' not in df.columns:
-        st.warning("Matrix requires 'Priority', 'Remediation', and 'Urgency' columns.")
+    required_cols = {'Priority', 'Remediation', 'Urgency', 'Control'}
+    if not required_cols.issubset(df.columns):
+        st.error(f"Missing columns: {required_cols - set(df.columns)}")
         return
 
-    priority_coords = {
+    # Positioning by quadrant
+    quadrant_positions = {
         'Do First': (0.25, 0.75),
         'Schedule': (0.25, 0.25),
         'Delegate': (0.75, 0.75),
         'Eliminate': (0.75, 0.25),
     }
 
-    df = df[df['Priority'].isin(priority_coords)].copy()
-    df['x'] = df['Priority'].apply(lambda p: priority_coords[p][0]) + 0.01 * (df.index % 5)
-    df['y'] = df['Priority'].apply(lambda p: priority_coords[p][1]) + 0.01 * (df.index % 5)
+    quadrant_colors = {
+        'Do First': '#FFCCCC',
+        'Schedule': '#FFFACD',
+        'Delegate': '#D5F5E3',
+        'Eliminate': '#D6EAF8',
+    }
 
-    urgency_colors = {'High': 'red', 'Low': 'green'}
+    df = df[df['Priority'].isin(quadrant_positions)].copy()
+    df['x'] = df['Priority'].apply(lambda p: quadrant_positions[p][0]) + 0.01 * (df.index % 5)
+    df['y'] = df['Priority'].apply(lambda p: quadrant_positions[p][1]) + 0.01 * (df.index % 5)
+
+    urgency_color = {'High': 'red', 'Low': 'green'}
 
     fig = go.Figure()
 
-    # Quadrant backgrounds
-    fig.add_shape(type="rect", x0=0, y0=0.5, x1=0.5, y1=1, fillcolor="#ffcccc", opacity=0.3, line_width=0)
-    fig.add_shape(type="rect", x0=0.5, y0=0.5, x1=1, y1=1, fillcolor="#c6f6c6", opacity=0.3, line_width=0)
-    fig.add_shape(type="rect", x0=0, y0=0, x1=0.5, y1=0.5, fillcolor="#fff6b2", opacity=0.3, line_width=0)
-    fig.add_shape(type="rect", x0=0.5, y0=0, x1=1, y1=0.5, fillcolor="#cce5ff", opacity=0.3, line_width=0)
+    # Add quadrants
+    for quadrant, (x, y) in quadrant_positions.items():
+        x0, y0 = x - 0.25, y - 0.25
+        x1, y1 = x + 0.25, y + 0.25
+        fig.add_shape(
+            type="rect", x0=x0, y0=y0, x1=x1, y1=y1,
+            fillcolor=quadrant_colors[quadrant], opacity=0.3, line_width=0
+        )
+        fig.add_annotation(
+            x=x, y=y1 - 0.05,
+            text=f"🟦 {quadrant}" if quadrant == "Eliminate" else f"🟥 {quadrant}" if quadrant == "Do First"
+            else f"🟨 {quadrant}" if quadrant == "Schedule" else f"🟩 {quadrant}",
+            showarrow=False, font=dict(size=14, color="black")
+        )
 
-    # Plot visible text and points
+    # Add tasks
     for _, row in df.iterrows():
+        label = row['Remediation']
+        if len(label) > 40:
+            label = label[:40] + "..."
         fig.add_trace(go.Scatter(
-            x=[row['x']],
-            y=[row['y']],
-            mode='markers+text',
-            marker=dict(size=14, color=urgency_colors.get(row['Urgency'], 'gray')),
-            text=[row['Remediation'][:45] + '...' if len(row['Remediation']) > 45 else row['Remediation']],
-            textposition='bottom center',
-            hovertext=f"{row['Control']} ({row['Priority']}, {row['Urgency']}): {row['Remediation']}",
+            x=[row['x']], y=[row['y']],
+            mode="markers+text",
+            marker=dict(color=urgency_color.get(row['Urgency'], 'gray'), size=14),
+            text=[label],
+            textposition="top center",
+            hovertext=f"{row['Control']} | {row['Remediation']}",
             hoverinfo="text",
             showlegend=False
         ))
-
-    # Quadrant titles
-    fig.add_annotation(x=0.25, y=0.95, text="🔴 Do First", showarrow=False, font=dict(size=14))
-    fig.add_annotation(x=0.75, y=0.95, text="🟢 Delegate", showarrow=False, font=dict(size=14))
-    fig.add_annotation(x=0.25, y=0.05, text="🟡 Schedule", showarrow=False, font=dict(size=14))
-    fig.add_annotation(x=0.75, y=0.05, text="🔵 Eliminate", showarrow=False, font=dict(size=14))
 
     fig.update_layout(
         title="Eisenhower Matrix for Remediation",
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0, 1]),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0, 1]),
-        height=650,
-        margin=dict(l=20, r=20, t=60, b=20),
-        plot_bgcolor='white'
+        height=700,
+        margin=dict(l=30, r=30, t=60, b=30),
+        plot_bgcolor="white"
     )
 
     st.plotly_chart(fig, use_container_width=True)

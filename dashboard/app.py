@@ -2,10 +2,12 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 from fpdf import FPDF
+import numpy as np
+
 from ingestion.normalize import normalize_data
 from scoring.score_engine import compute_scores
 from ai_module.remediation_agent import suggest_remediations
-from dashboard.visuals import radar_chart, heatmap
+from dashboard.visuals import radar_chart, heatmap, eisenhower_matrix
 
 def generate_pdf(df):
     pdf = FPDF()
@@ -48,6 +50,11 @@ def run_dashboard(_):
     if uploaded_file is not None:
         df = normalize_data(uploaded_file)
         df = compute_scores(df)
+
+        # ✅ Add this to simulate urgency if not present
+        if 'Urgency' not in df.columns:
+            df['Urgency'] = np.random.choice(['High', 'Low'], size=len(df))
+
         df = suggest_remediations(df)
 
         st.markdown("---")
@@ -61,6 +68,7 @@ def run_dashboard(_):
         with st.expander("📈 Advanced Visualizations"):
             radar_chart(df)
             heatmap(df)
+            eisenhower_matrix(df)  # ✅ Show matrix here
 
         with st.expander("🧠 Smart Insights"):
             insights = generate_insights(df)

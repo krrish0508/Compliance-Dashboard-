@@ -24,7 +24,7 @@ def wrap_text(text, width=35):
     return "<br>".join(textwrap.wrap(text, width=width))
 
 # Eisenhower Matrix
-def eisenhower_matrix(df):
+'''def eisenhower_matrix(df):
     st.subheader("🧭 Eisenhower Matrix: Remediation Prioritization")
 
     required_cols = ['Priority', 'Remediation', 'Domain', 'Control']
@@ -83,3 +83,4 @@ def eisenhower_matrix(df):
     )
 
     st.plotly_chart(fig, use_container_width=True)
+'''

@@ -17,9 +17,10 @@ def generate_pdf(df):
     for index, row in df.iterrows():
         pdf.cell(200, 10, txt=f"{row['Control']}: Score {row['Score']} - {row['Remediation']}", ln=True)
     output = BytesIO()
-    pdf.output(name=output, dest='S')
-    output.seek(0)
-    return output
+pdf_bytes = pdf.output(dest='S').encode('latin1')  # return as string, encode to bytes
+output.write(pdf_bytes)
+output.seek(0)
+return output
 
 def generate_insights(df):
     low_score_controls = df[df['Score'] < 70].sort_values(by='Score')

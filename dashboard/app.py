@@ -7,7 +7,7 @@ import numpy as np
 from ingestion.normalize import normalize_data
 from scoring.score_engine import compute_scores
 from ai_module.remediation_agent import suggest_remediations
-from dashboard.visuals import radar_chart, heatmap, eisenhower_matrix
+from dashboard.visuals import radar_chart, heatmap
 
 def generate_pdf(df):
     pdf = FPDF()
@@ -72,7 +72,7 @@ def run_dashboard(_):
         with st.expander("📈 Advanced Visualizations"):
             radar_chart(df)
             heatmap(df)
-            eisenhower_matrix(filtered)  # ✅ Use filtered data here
+            #eisenhower_matrix(filtered)  # ✅ Use filtered data here
 
         with st.expander("🧠 Smart Insights"):
             insights = generate_insights(df)

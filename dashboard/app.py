@@ -11,18 +11,91 @@ from dashboard.visuals import radar_chart, heatmap
 
 
 def generate_pdf(df):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Compliance Summary", ln=True, align="C")
-    for index, row in df.iterrows():
-        pdf.cell(200, 10, txt=f"{row['Control']}: Score {row['Score']} - {row['Remediation']}", ln=True)
+    from datetime import datetime
+    import os
+    from io import BytesIO
 
+    class PDFReport(FPDF):
+        def header(self):
+            # Logo (optional - place logo.png in dashboard/)
+            logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
+            if os.path.exists(logo_path):
+                self.image(logo_path, 10, 8, 20)  # x, y, width
+
+            # Title
+            self.set_font('Arial', 'B', 16)
+            self.cell(0, 10, "Compliance Summary Report", ln=True, align='C')
+
+            # Date
+            self.set_font('Arial', '', 10)
+            self.cell(0, 5, f"Generated on: {datetime.now().strftime('%Y-%m-%d')}", ln=True, align='C')
+            self.ln(10)
+
+        def footer(self):
+            # Position at 1.5 cm from bottom
+            self.set_y(-15)
+            self.set_font('Arial', 'I', 8)
+            self.set_text_color(150)
+            self.cell(0, 10, "Confidential - For Internal Use Only", 0, 0, 'C')
+
+    # Create PDF object
+    pdf = PDFReport()
+    pdf.add_page()
+
+    # Executive Summary
+    pdf.set_font("Arial", '', 11)
+    summary_text = (
+        "This report summarizes the current compliance performance against key ISO controls. "
+        "Controls scoring below 70 require immediate attention. Higher scores indicate strong performance."
+    )
+    pdf.multi_cell(0, 6, summary_text)
+    pdf.ln(5)
+
+    # Table Header
+    pdf.set_font("Arial", 'B', 12)
+    pdf.set_fill_color(41, 128, 185)  # Blue header
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(60, 8, "Control", 1, 0, 'C', fill=True)
+    pdf.cell(30, 8, "Score", 1, 0, 'C', fill=True)
+    pdf.cell(100, 8, "Recommendation", 1, 1, 'C', fill=True)
+
+    # Table Rows
+    pdf.set_font("Arial", '', 10)
+    for _, row in df.iterrows():
+        control = str(row.get("Control", ""))
+        score = int(row.get("Score", 0))
+        recommendation = str(row.get("Remediation", ""))
+
+        # Color code score cell
+        if score < 50:
+            pdf.set_fill_color(231, 76, 60)  # Red
+            score_text_color = (255, 255, 255)
+        elif score < 70:
+            pdf.set_fill_color(241, 196, 15)  # Yellow
+            score_text_color = (0, 0, 0)
+        else:
+            pdf.set_fill_color(46, 204, 113)  # Green
+            score_text_color = (255, 255, 255)
+
+        # Control
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(60, 8, control, 1)
+
+        # Score (with background color)
+        pdf.set_text_color(*score_text_color)
+        pdf.cell(30, 8, str(score), 1, 0, 'C', fill=True)
+
+        # Recommendation
+        pdf.set_text_color(0, 0, 0)
+        pdf.multi_cell(100, 8, recommendation, border=1)
+
+    # Output as BytesIO for Streamlit download
     output = BytesIO()
-    pdf_bytes = pdf.output(dest='S').encode('latin1')  # return as string, encode to bytes
+    pdf_bytes = pdf.output(dest='S').encode('latin1')
     output.write(pdf_bytes)
     output.seek(0)
     return output
+
 
 
 def generate_insights(df):

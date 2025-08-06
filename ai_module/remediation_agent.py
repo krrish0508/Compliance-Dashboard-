@@ -3,16 +3,19 @@ from dotenv import load_dotenv
 import openai
 import pandas as pd
 
-# Load API Key from .env
+# Load API Key from Streamlit secrets or .env
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("Missing OpenAI API key. Set OPENAI_API_KEY in your environment variables or Streamlit secrets.")
 
-if not openai.api_key:
-    raise ValueError("❌ OPENAI_API_KEY not found. Please set it in .env or Streamlit Secrets.")
+# Create OpenAI client
+client = openai.OpenAI(api_key=api_key)
+
 
 def gpt_remediation(control, score, domain):
     """
-    Ask GPT for a remediation recommendation and priority.
+    Ask GPT for a remediation recommendation and priority using the new OpenAI API.
     """
     prompt = f"""
     You are an ISO 27001 compliance consultant.
@@ -28,10 +31,8 @@ def gpt_remediation(control, score, domain):
     """
 
     try:
-        print(f"🔍 Sending request to GPT for control: {control} | Score: {score} | Domain: {domain}")
-
-        response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",  # Try gpt-3.5-turbo if gpt-4o-mini fails
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # Small & fast GPT model
             messages=[
                 {"role": "system", "content": "You are an expert in compliance and security frameworks."},
                 {"role": "user", "content": prompt}
@@ -39,8 +40,7 @@ def gpt_remediation(control, score, domain):
             max_tokens=120
         )
 
-        reply = response.choices[0].message["content"].strip()
-        print(f"✅ GPT raw reply: {reply}")
+        reply = response.choices[0].message.content.strip()
 
         # Parse GPT's structured output
         recommendation = ""
@@ -54,9 +54,11 @@ def gpt_remediation(control, score, domain):
         return recommendation, priority
 
     except Exception as e:
-        error_message = f"❌ GPT request failed: {str(e)}"
-        print(error_message)
-        return (error_message, "Schedule")
+        return (
+            f"Unable to generate recommendation. Error: {str(e)}",
+            "Schedule"
+        )
+
 
 
 def suggest_remediations(df: pd.DataFrame) -> pd.DataFrame:

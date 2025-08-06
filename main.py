@@ -3,7 +3,7 @@ import pandas as pd
 from ingestion.normalize import normalize_data
 from scoring.score_engine import compute_scores
 from ai_module.remediation_agent import suggest_remediations
-from dashboard.app import run_dashboard
+#from dashboard.app import run_dashboard
 
 def main():
     os.makedirs("data/raw", exist_ok=True)

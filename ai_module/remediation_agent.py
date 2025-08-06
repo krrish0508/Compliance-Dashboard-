@@ -1,16 +1,14 @@
+import openai
+from openai import OpenAI
+import pandas as pd
 import os
 from dotenv import load_dotenv
-import openai
-import pandas as pd
 
-# Load API Key from Streamlit secrets or .env
+# Load environment variables
 load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise ValueError("Missing OpenAI API key. Set OPENAI_API_KEY in your environment variables or Streamlit secrets.")
 
-# Create OpenAI client
-client = openai.OpenAI(api_key=api_key)
+# Initialize OpenAI client
+client = OpenAI()  # Uses OPENAI_API_KEY from .env
 
 def gpt_remediation(control, score, domain):
     """
@@ -30,8 +28,8 @@ def gpt_remediation(control, score, domain):
     """
 
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Updated model here
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are an expert in compliance and security frameworks."},
                 {"role": "user", "content": prompt}
@@ -39,7 +37,7 @@ def gpt_remediation(control, score, domain):
             max_tokens=120
         )
 
-        reply = response.choices[0].message["content"].strip()
+        reply = response.choices[0].message.content.strip()
 
         # Parse GPT's structured output
         recommendation = ""
@@ -58,10 +56,6 @@ def gpt_remediation(control, score, domain):
             "Schedule"
         )
 
-
-
-
-
 def suggest_remediations(df: pd.DataFrame) -> pd.DataFrame:
     """
     Enhance the DataFrame with GPT‑generated remediation recommendations & priorities.
@@ -75,7 +69,6 @@ def suggest_remediations(df: pd.DataFrame) -> pd.DataFrame:
         domain = row.get("Domain", "")
 
         recommendation, priority = gpt_remediation(control, score, domain)
-
         remediations.append(recommendation)
         priorities.append(priority)
 

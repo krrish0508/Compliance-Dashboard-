@@ -1,37 +1,76 @@
-def suggest_remediations(df):
-    def suggest(row):
-        control = row['Control']
-        score = row['Score']
-        domain = row['Domain']
+import os
+from dotenv import load_dotenv
+import openai
+import pandas as pd
 
-        if score < 60:
-            if domain == "Access Control":
-                return "Enforce least privilege and automate quarterly access reviews."
-            elif domain == "DevSecOps":
-                return "Integrate security scanning tools into your CI/CD pipeline."
-            elif domain == "Network Security":
-                return "Segment networks and review firewall configurations."
-            else:
-                return "Review and strengthen controls in this domain."
-        elif score < 80:
-            return "Review documentation, training, and automation in this area."
-        else:
-            return "Control performing well. Maintain current processes."
+# Load API Key from .env
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-    def eisenhower_classification(row):
-        score = row['Score']
-        urgency = row.get('Urgency', 'Low')  # Default to Low if not present
+def gpt_remediation(control, score, domain):
+    """
+    Ask GPT for a remediation recommendation and priority.
+    """
+    prompt = f"""
+    You are an ISO 27001 compliance consultant.
+    Control: {control}
+    Domain: {domain}
+    Current Compliance Score: {score}/100
 
-        severity = 'High' if score < 60 else 'Low'
-        if severity == 'High' and urgency == 'High':
-            return 'Do First'
-        elif severity == 'High' and urgency == 'Low':
-            return 'Schedule'
-        elif severity == 'Low' and urgency == 'High':
-            return 'Delegate'
-        else:
-            return 'Eliminate'
+    1. Write a concise remediation recommendation in 1–2 sentences.
+    2. Suggest a priority: 'Do First', 'Schedule', 'Delegate', or 'Eliminate'.
+    Format your response as:
+    Recommendation: <text>
+    Priority: <priority>
+    """
 
-    df['Remediation'] = df.apply(suggest, axis=1)
-    df['Priority'] = df.apply(eisenhower_classification, axis=1)
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4o-mini",  # lightweight GPT model
+            messages=[
+                {"role": "system", "content": "You are an expert in compliance and security frameworks."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=120
+        )
+
+        reply = response.choices[0].message["content"].strip()
+
+        # Parse GPT's structured output
+        recommendation = ""
+        priority = ""
+        for line in reply.split("\n"):
+            if line.lower().startswith("recommendation:"):
+                recommendation = line.split(":", 1)[1].strip()
+            elif line.lower().startswith("priority:"):
+                priority = line.split(":", 1)[1].strip()
+
+        return recommendation, priority
+
+    except Exception as e:
+        return (
+            "Unable to generate recommendation. Please review this control manually.",
+            "Schedule"
+        )
+
+
+def suggest_remediations(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Enhance the DataFrame with GPT‑generated remediation recommendations & priorities.
+    """
+    remediations = []
+    priorities = []
+
+    for _, row in df.iterrows():
+        control = row.get("Control", "")
+        score = row.get("Score", 0)
+        domain = row.get("Domain", "")
+
+        recommendation, priority = gpt_remediation(control, score, domain)
+
+        remediations.append(recommendation)
+        priorities.append(priority)
+
+    df["Remediation"] = remediations
+    df["Priority"] = priorities
     return df

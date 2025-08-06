@@ -14,13 +14,20 @@ def generate_pdf(df):
     from datetime import datetime
     import os
     from io import BytesIO
+    from fpdf import FPDF
+
+    # Helper to clean text for latin1
+    def clean_text(text):
+        if not isinstance(text, str):
+            text = str(text)
+        return text.encode('latin1', 'replace').decode('latin1')
 
     class PDFReport(FPDF):
         def header(self):
-            # Logo (optional - place logo.png in dashboard/)
+            # Logo (optional)
             logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
             if os.path.exists(logo_path):
-                self.image(logo_path, 10, 8, 20)  # x, y, width
+                self.image(logo_path, 10, 8, 20)
 
             # Title
             self.set_font('Arial', 'B', 16)
@@ -32,13 +39,11 @@ def generate_pdf(df):
             self.ln(10)
 
         def footer(self):
-            # Position at 1.5 cm from bottom
             self.set_y(-15)
             self.set_font('Arial', 'I', 8)
             self.set_text_color(150)
             self.cell(0, 10, "Confidential - For Internal Use Only", 0, 0, 'C')
 
-    # Create PDF object
     pdf = PDFReport()
     pdf.add_page()
 
@@ -48,12 +53,12 @@ def generate_pdf(df):
         "This report summarizes the current compliance performance against key ISO controls. "
         "Controls scoring below 70 require immediate attention. Higher scores indicate strong performance."
     )
-    pdf.multi_cell(0, 6, summary_text)
+    pdf.multi_cell(0, 6, clean_text(summary_text))
     pdf.ln(5)
 
     # Table Header
     pdf.set_font("Arial", 'B', 12)
-    pdf.set_fill_color(41, 128, 185)  # Blue header
+    pdf.set_fill_color(41, 128, 185)  # Blue
     pdf.set_text_color(255, 255, 255)
     pdf.cell(60, 8, "Control", 1, 0, 'C', fill=True)
     pdf.cell(30, 8, "Score", 1, 0, 'C', fill=True)
@@ -62,11 +67,11 @@ def generate_pdf(df):
     # Table Rows
     pdf.set_font("Arial", '', 10)
     for _, row in df.iterrows():
-        control = str(row.get("Control", ""))
+        control = clean_text(row.get("Control", ""))
         score = int(row.get("Score", 0))
-        recommendation = str(row.get("Remediation", ""))
+        recommendation = clean_text(row.get("Remediation", ""))
 
-        # Color code score cell
+        # Color code for score
         if score < 50:
             pdf.set_fill_color(231, 76, 60)  # Red
             score_text_color = (255, 255, 255)
@@ -81,7 +86,7 @@ def generate_pdf(df):
         pdf.set_text_color(0, 0, 0)
         pdf.cell(60, 8, control, 1)
 
-        # Score (with background color)
+        # Score
         pdf.set_text_color(*score_text_color)
         pdf.cell(30, 8, str(score), 1, 0, 'C', fill=True)
 
@@ -89,12 +94,13 @@ def generate_pdf(df):
         pdf.set_text_color(0, 0, 0)
         pdf.multi_cell(100, 8, recommendation, border=1)
 
-    # Output as BytesIO for Streamlit download
+    # Output as BytesIO for Streamlit
     output = BytesIO()
-    pdf_bytes = pdf.output(dest='S').encode('latin1')
+    pdf_bytes = pdf.output(dest='S').encode('latin1', 'replace')
     output.write(pdf_bytes)
     output.seek(0)
     return output
+
 
 
 

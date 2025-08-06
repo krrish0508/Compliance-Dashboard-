@@ -9,6 +9,7 @@ from scoring.score_engine import compute_scores
 from ai_module.remediation_agent import suggest_remediations
 from dashboard.visuals import radar_chart, heatmap
 
+
 def generate_pdf(df):
     pdf = FPDF()
     pdf.add_page()
@@ -16,11 +17,13 @@ def generate_pdf(df):
     pdf.cell(200, 10, txt="Compliance Summary", ln=True, align="C")
     for index, row in df.iterrows():
         pdf.cell(200, 10, txt=f"{row['Control']}: Score {row['Score']} - {row['Remediation']}", ln=True)
+
     output = BytesIO()
-pdf_bytes = pdf.output(dest='S').encode('latin1')  # return as string, encode to bytes
-output.write(pdf_bytes)
-output.seek(0)
-return output
+    pdf_bytes = pdf.output(dest='S').encode('latin1')  # return as string, encode to bytes
+    output.write(pdf_bytes)
+    output.seek(0)
+    return output
+
 
 def generate_insights(df):
     low_score_controls = df[df['Score'] < 70].sort_values(by='Score')
@@ -38,14 +41,20 @@ def generate_insights(df):
 
     return insights
 
+
 def run_dashboard(_):
     st.set_page_config(page_title="Compliance Dashboard", layout="wide")
-    st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/512px-React-icon.svg.png", width=80)
+    st.sidebar.image(
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/512px-React-icon.svg.png",
+        width=80
+    )
     st.sidebar.title("🔐 Compliance Portal")
     st.sidebar.markdown("Select a file to begin analysis.")
 
     st.title("📊 Compliance Posture Dashboard")
-    st.markdown("Upload your compliance dataset to begin analysis. The dashboard visualizes KPIs and recommends remediation strategies.")
+    st.markdown(
+        "Upload your compliance dataset to begin analysis. The dashboard visualizes KPIs and recommends remediation strategies."
+    )
 
     uploaded_file = st.sidebar.file_uploader("📎 Upload a CSV file", type="csv")
     if uploaded_file is not None:
@@ -58,10 +67,6 @@ def run_dashboard(_):
 
         df = suggest_remediations(df)
 
-        # Optional debug preview
-        # st.write("🔍 Priority Preview")
-        # st.dataframe(df[['Control', 'Score', 'Urgency', 'Priority']])
-
         st.markdown("---")
         framework = st.selectbox("🔍 Select Compliance Framework", sorted(df["Framework"].unique()))
         domain = st.selectbox("📂 Select Domain", sorted(df["Domain"].unique()))
@@ -73,7 +78,6 @@ def run_dashboard(_):
         with st.expander("📈 Advanced Visualizations"):
             radar_chart(df)
             heatmap(df)
-            #eisenhower_matrix(filtered)  # ✅ Use filtered data here
 
         with st.expander("🧠 Smart Insights"):
             insights = generate_insights(df)

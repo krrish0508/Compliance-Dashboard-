@@ -7,6 +7,9 @@ import pandas as pd
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+if not openai.api_key:
+    raise ValueError("❌ OPENAI_API_KEY not found. Please set it in .env or Streamlit Secrets.")
+
 def gpt_remediation(control, score, domain):
     """
     Ask GPT for a remediation recommendation and priority.
@@ -25,8 +28,10 @@ def gpt_remediation(control, score, domain):
     """
 
     try:
+        print(f"🔍 Sending request to GPT for control: {control} | Score: {score} | Domain: {domain}")
+
         response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",  # lightweight GPT model
+            model="gpt-4o-mini",  # Try gpt-3.5-turbo if gpt-4o-mini fails
             messages=[
                 {"role": "system", "content": "You are an expert in compliance and security frameworks."},
                 {"role": "user", "content": prompt}
@@ -35,6 +40,7 @@ def gpt_remediation(control, score, domain):
         )
 
         reply = response.choices[0].message["content"].strip()
+        print(f"✅ GPT raw reply: {reply}")
 
         # Parse GPT's structured output
         recommendation = ""
@@ -48,10 +54,9 @@ def gpt_remediation(control, score, domain):
         return recommendation, priority
 
     except Exception as e:
-        return (
-            "Unable to generate recommendation. Please review this control manually.",
-            "Schedule"
-        )
+        error_message = f"❌ GPT request failed: {str(e)}"
+        print(error_message)
+        return (error_message, "Schedule")
 
 
 def suggest_remediations(df: pd.DataFrame) -> pd.DataFrame:

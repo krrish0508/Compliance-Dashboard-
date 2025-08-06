@@ -12,10 +12,9 @@ if not api_key:
 # Create OpenAI client
 client = openai.OpenAI(api_key=api_key)
 
-
 def gpt_remediation(control, score, domain):
     """
-    Ask GPT for a remediation recommendation and priority using the new OpenAI API.
+    Ask GPT for a remediation recommendation and priority.
     """
     prompt = f"""
     You are an ISO 27001 compliance consultant.
@@ -31,8 +30,8 @@ def gpt_remediation(control, score, domain):
     """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Small & fast GPT model
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Updated model here
             messages=[
                 {"role": "system", "content": "You are an expert in compliance and security frameworks."},
                 {"role": "user", "content": prompt}
@@ -40,7 +39,7 @@ def gpt_remediation(control, score, domain):
             max_tokens=120
         )
 
-        reply = response.choices[0].message.content.strip()
+        reply = response.choices[0].message["content"].strip()
 
         # Parse GPT's structured output
         recommendation = ""
@@ -58,6 +57,8 @@ def gpt_remediation(control, score, domain):
             f"Unable to generate recommendation. Error: {str(e)}",
             "Schedule"
         )
+
+
 
 
 
